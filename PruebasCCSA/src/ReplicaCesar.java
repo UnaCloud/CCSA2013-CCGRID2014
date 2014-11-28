@@ -14,23 +14,11 @@ import unacloudws.requests.VirtualImageRequest;
 import unacloudws.responses.VirtualMachineExecutionWS;
 import unacloudws.responses.VirtualMachineStatusEnum;
 
-public class Tester {
+public class ReplicaCesar {
 	public static void main(String[] args){
 		try{
-			int number=Integer.parseInt(args[0]);
+			int number=5;
 			ClusterDescription c=startCluster(number);
-			new File(""+c.id).mkdirs();
-			PrintWriter pw=new PrintWriter(new FileOutputStream("dep"+c.id+".txt"),true);
-			if(c!=null&&c.vms!=null&&!c.vms.isEmpty()){
-				Thread[] ts=new Thread[number];
-				for(int e=0;e<ts.length;e++)ts[e]=new HiloVm(e,c.id,c.vms.get(e).getVirtualMachineExecutionIP());
-				pw.println("Arrancando en "+new Date());
-				for(int e=0;e<ts.length;e++)ts[e].start();
-				for(int e=0;e<ts.length;e++)ts[e].join();
-				pw.println("Terminando en "+new Date());
-			}
-			pw.close();
-			if(c!=null)apagarCluster(c.id);
 		}catch(Exception ex){
 			ex.printStackTrace();
 		}
@@ -104,29 +92,5 @@ public class Tester {
 			this.vms = vms;
 		}
 	}
-	static class HiloVm extends Thread{
-		String ip;
-		int id;
-		long deploymentId;
-		public HiloVm(int id,long deploymentId,String ip) {
-			this.ip = ip;
-			this.id=id;
-			this.deploymentId=deploymentId;
-		}
-		@Override
-		public void run() {
-			try {
-				Process p=runtime.exec(new String[]{"sshpass","-p","DebianP445","ssh","-o","StrictHostKeyChecking=no",ip,"mdrun -v -s MD.tpr"});
-				Files.copy(Paths.get(deploymentId+"/"+id+".out"),p.getOutputStream());
-				System.out.println(" El proceso "+id+" termino con codigo "+p.waitFor());
-				p.destroy();
-			} catch (Exception e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			}
-		}
-	}
 	static Random r=new Random();
-	static Runtime runtime=Runtime.getRuntime();
-	
 }
