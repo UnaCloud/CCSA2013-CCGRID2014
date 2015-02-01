@@ -5,6 +5,7 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.nio.file.Files;
 import java.nio.file.Paths;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -41,33 +42,37 @@ public class Tester {
 		String deploymentId=uop.startHeterogeneousVirtualCluster(4,180,createRandomCluster(size));
 		ClusterDescription desc=new ClusterDescription(-1,null);
 		if(deploymentId!=null&&deploymentId.contains("\"id\"")){
-			int ini=deploymentId.indexOf("\"id\"");
-			int fin=deploymentId.indexOf(",",ini);
+			int ini=deploymentId.indexOf("\"id\""),fin=deploymentId.indexOf(",",ini);
 			ini=deploymentId.indexOf(":",ini);
 			System.out.println("El id es "+deploymentId.substring(ini,fin));
 			desc.id=Long.parseLong(deploymentId.substring(ini+1,fin));
 			for(int intentos=0;intentos<20;intentos++){
-				int encendidas=0;
+				int encendidas=0,fallidas=0;
 				Thread.sleep(60000);
 				List<VirtualMachineExecutionWS> vms=uop.getDeploymentInfo((int)desc.id);
 				for(VirtualMachineExecutionWS vm:vms){
 					if(vm.getVirtualMachineExecutionStatus()==VirtualMachineStatusEnum.DEPLOYED)encendidas++;
-					if(vm.getVirtualMachineExecutionStatus()==VirtualMachineStatusEnum.FAILED){
-						System.out.println("El cluster fallo, inicie de nuevo.");
-						return desc;
-					}
+					if(vm.getVirtualMachineExecutionStatus()==VirtualMachineStatusEnum.FAILED)fallidas++;
 				}
-				if(encendidas==vms.size()){
-					desc.vms=vms;
+				if(encendidas+fallidas==vms.size()){
+					desc.vms=new ArrayList<VirtualMachineExecutionWS>();
 					PrintWriter pw=new PrintWriter(desc.id+".txt");
-					for(VirtualMachineExecutionWS vm:vms)pw.println(vm.getVirtualMachineExecutionIP());
+					for(VirtualMachineExecutionWS vm:vms)if(vm.getVirtualMachineExecutionStatus()==VirtualMachineStatusEnum.DEPLOYED){
+						pw.println(vm.getVirtualMachineExecutionIP());
+						desc.vms.add(vm);
+					}
 					pw.close();
 					break;
 				}
 				System.out.println(" Encendidas "+encendidas+"/"+vms.size());
 			}
 		}
-		for(int e=0;e<desc.vms.size();e++){
+		verificarServicioSSH(desc);
+		System.out.println("El cluster con id "+desc.id+" ha iniciado exitosamente");
+		return desc;
+	}
+	private static void verificarServicioSSH(ClusterDescription desc)throws Exception{
+		for(int e=0;e<desc.vms.size();e++){//Esto está verificando que tengan el ssh encendido. A veces se demora arancando
 			VirtualMachineExecutionWS vm = desc.vms.get(e);
 			if(vm.getVirtualMachineExecutionStatus()==VirtualMachineStatusEnum.DEPLOYED){
 				try{
@@ -80,8 +85,6 @@ public class Tester {
 				}
 			}
 		}
-		System.out.println("El cluster con id "+desc.id+" ha iniciado exitosamente");
-		return desc;
 	}
 	public static void apagarCluster(long id)throws Exception{
 		UnaCloudOperations uop=new UnaCloudOperations("admin","XT2PRB591GOJU5J9CTUP8EHK06IH37Y1");
