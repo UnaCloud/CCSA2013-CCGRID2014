@@ -8,5 +8,7 @@
 	<classpathentry kind="lib" path="lib/jersey-bundle-1.17.1.jar"/>
 	<classpathentry kind="lib" path="lib/jersey-json-1.18.jar"/>
 	<classpathentry kind="lib" path="lib/unacloudws.jar"/>
+	<classpathentry kind="lib" path="lib/com.mysql.jdbc_5.1.5.jar"/>
+	<classpathentry kind="lib" path="lib/mail.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
